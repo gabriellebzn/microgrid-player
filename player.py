@@ -23,7 +23,8 @@ class Player:
         self.horizon = 48
         self.surface = 100
         self.l_pv = {}
-        self.l_bat = {}
+        self.l_batp = {}
+        self.l_batm = {}
         self.l_i = {}
         self.a = {}
 
@@ -43,7 +44,8 @@ class Player:
         self.l_pv = np.repeat(self.l_pv, 2)
 
         for t in range(48):
-            self.l_bat[t] = pulp.LpVariable('lbat_' + str(t), -self.pmax, self.pmax)
+            self.l_batp[t] = pulp.LpVariable('lbatp_' + str(t), 0, self.pmax)
+            self.l_batm[t] = pulp.LpVariable('lbatm_' + str(t), -self.pmax,0)
             # self.l_bat = pulp.LpVariable.dicts('l_bat', indexs=np.arange(48), lowBound=-1*self.pmax, upBound=self.pmax)
             self.l_i[t] = pulp.LpVariable('li_' + str(t), None, None)
             # self.l_i = pulp.LpVariable.dicts('l_i', indexs=np.arange(48))
@@ -72,22 +74,19 @@ class Player:
         lpv = self.l_pv
 
         for t in range(time, 48):
-            if t == 48:
-                lp += self.a[t] == 0, "cnt_batt_" + str(t)
-            else:
+            # if t == 48:
+            #     lp += self.a[t] == 0, "cnt_batt_" + str(t)
+
                 # OB ajout d'un affichage -> bogue est ici... votre dictionnaire
                 # ne contient pas la clé 0 quand t= 1
                 # print("t=", t, "et dict. = ",  self.a)
-                lp += self.a[t] == self.a[t - 1] + (
-                            self.rho_c * np.maximum(self.l_bat[t] - lpv[t], 0) - (1 / self.rho_d) * np.minimum(self.l_bat[t]- lpv[t],
-                                                                                                      0)) * self.delta_t, "cnt_batt_" + str(t)
-            lp += self.l_i[t] == self.l_bat[t] - lpv[t], "cnt_li_" + str(t)
+            lp += self.a[t] == self.a[t - 1] + (self.rho_c * self.l_batp[t] - (1 / self.rho_d) * self.l_batm[t]) * self.delta_t, "cnt_batt_" + str(t)
+            lp += self.l_i[t] == self.l_batp[t]+self.l_batm[t] - lpv[t], "cnt_li_" + str(t)
 
         lp.setObjective(pulp.lpSum([self.l_i[t] * self.prix[t] for t in range(time, 48)]))
 
         status = lp.solve()  # Solver
         print(pulp.LpStatus[status])
-        print(self.l_i[t].varValue)
         # model=Model(lp,self.l_i)
         for t in range(48):
             print(self.l_i[t].varValue)
