@@ -74,14 +74,17 @@ class Player:
         lpv = self.l_pv
 
         for t in range(time, 48):
-            # if t == 48:
-            #     lp += self.a[t] == 0, "cnt_batt_" + str(t)
+            if t==0:
+                lp+= self.l_i[t]==0, "cnt_0li" + str(t)
+            if t == 48:
+                lp += self.a[t] == 0, "cnt_batt_" + str(t)
 
                 # OB ajout d'un affichage -> bogue est ici... votre dictionnaire
                 # ne contient pas la clé 0 quand t= 1
                 # print("t=", t, "et dict. = ",  self.a)
-            lp += self.a[t] == self.a[t - 1] + (self.rho_c * self.l_batp[t] - (1 / self.rho_d) * self.l_batm[t]) * self.delta_t, "cnt_batt_" + str(t)
-            lp += self.l_i[t] == self.l_batp[t]+self.l_batm[t] - lpv[t], "cnt_li_" + str(t)
+            else:
+                lp += self.a[t] == self.a[t - 1] + (self.rho_c * self.l_batp[t] - (1 / self.rho_d) * self.l_batm[t]) * self.delta_t, "cnt_batt_" + str(t)
+                lp += self.l_i[t] == self.l_batp[t]+self.l_batm[t] - lpv[t], "cnt_li_" + str(t)
 
         lp.setObjective(pulp.lpSum([self.l_i[t] * self.prix[t] for t in range(time, 48)]))
 
